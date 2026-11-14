@@ -1,0 +1,148 @@
+---
+title: Redéfinition de composants
+description: Apprenez à redéfinir les composants intégrés à Starlight pour ajouter des éléments personnalisés à l’interface utilisateur de votre site de documentation.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+L'interface utilisateur et les options de configuration par défaut de Starlight sont conçues pour être flexibles et fonctionner pour une variété de contenus. Une grande partie de l'apparence par défaut de Starlight peut être personnalisée grâce au [CSS](/fr/guides/css-and-tailwind/) et aux [options de configuration](/fr/guides/customization/).
+
+Quand vos besoins dépassent ce qui est possible de base, Starlight prend en charge la création de vos propres composants personnalisés pour étendre ou redéfinir (remplacer complètement) ses composants par défaut.
+
+## Quand redéfinir
+
+Redéfinir les composants par défaut de Starlight peut être utile lorsque :
+
+- Vous souhaitez modifier l'apparence d'une partie de l'interface utilisateur de Starlight d'une manière qui n'est pas possible avec du [CSS personnalisé](/fr/guides/css-and-tailwind/).
+- Vous souhaitez modifier le comportement d'une partie de l'interface utilisateur de Starlight.
+- Vous souhaitez ajouter certains éléments supplémentaires à l'interface utilisateur existante de Starlight.
+
+## Comment redéfinir
+
+<Steps>
+
+1. Choisissez le composant de Starlight que vous souhaitez redéfinir.
+   Vous pouvez trouver une liste complète des composants dans la [référence des redéfinitions](/fr/reference/overrides/).
+
+   :::tip
+   Vous ne savez pas quel composant vous devez redéfinir ? Utilisez la [carte interactive des redéfinitions de Starlight](https://starlight-overrides-map.netlify.app/) pour découvrir les noms des composants de l'interface utilisateur de Starlight.
+   :::
+
+   Cet exemple va redéfinir le composant [`SocialIcons`](/fr/reference/overrides/#socialicons) de Starlight dans la barre de navigation de la page.
+
+2. Créez un composant Astro pour remplacer le composant de Starlight.
+   Cet exemple affiche un lien de contact.
+
+   ```astro
+   ---
+   // src/components/EmailLink.astro
+
+   const email = 'houston@example.com';
+   ---
+
+   <a href=`mailto:${email}`>Me contacter par courriel</a>
+   ```
+
+3. Configurez Starlight pour utiliser votre composant personnalisé avec l'option de configuration [`components`](/fr/reference/configuration/#components) dans le fichier `astro.config.mjs` :
+
+   ```js {9-12}
+   // astro.config.mjs
+   import { defineConfig } from 'astro/config';
+   import starlight from '@astrojs/starlight';
+
+   export default defineConfig({
+   	integrations: [
+   		starlight({
+   			title: 'Ma documentation avec redéfinitions',
+   			components: {
+   				// Redéfinit le composant par défaut `SocialIcons`.
+   				SocialIcons: './src/components/EmailLink.astro',
+   			},
+   		}),
+   	],
+   });
+   ```
+
+</Steps>
+
+## Réutiliser un composant intégré
+
+Vous pouvez utiliser les composants par défaut de Starlight de la même manière que les vôtres : en les important et en les affichant dans vos propres composants personnalisés. Cela vous permet de conserver toute l'interface utilisateur de base de Starlight dans votre design, tout en ajoutant des éléments supplémentaires à côté.
+
+L'exemple ci-dessous montre un composant personnalisé qui affiche un lien de courriel suivi du composant `SocialIcons` par défaut :
+
+```astro {3,7}
+---
+// src/components/EmailLink.astro
+import Default from '@astrojs/starlight/components/SocialIcons.astro';
+---
+
+<a href="mailto:houston@example.com">Me contacter par courriel</a>
+<Default><slot /></Default>
+```
+
+Lorsque vous affichez un composant intégré dans un composant personnalisé, ajoutez un élément [`<slot />`](https://docs.astro.build/fr/basics/astro-components/#les-slots) à l'intérieur du composant par défaut. Cela permet de s'assurer que si le composant reçoit des éléments enfants, Astro sait où les afficher.
+
+Si vous réutilisez les composants [`PageFrame`](/fr/reference/overrides/#pageframe) ou [`TwoColumnContent`](/fr/reference/overrides/#twocolumncontent) qui contiennent des [slots nommés](https://docs.astro.build/fr/basics/astro-components/#les-slots-nomm%C3%A9s), vous devez également [transférer](https://docs.astro.build/fr/basics/astro-components/#transf%C3%A9rer-des-slots) ces slots.
+
+L'exemple ci-dessous montre un composant personnalisé qui réutilise le composant `TwoColumnContent` qui contient un slot supplémentaire nommé `right-sidebar` qui doit être transféré :
+
+```astro {8}
+---
+// src/components/CustomContent.astro
+import Default from '@astrojs/starlight/components/TwoColumnContent.astro';
+---
+
+<Default>
+	<slot />
+	<slot name="right-sidebar" slot="right-sidebar" />
+</Default>
+```
+
+## Utiliser les données de la page
+
+Lorsque vous redéfinissez un composant de Starlight, vous pouvez accéder à l'objet global [`starlightRoute`](/fr/guides/route-data/) contenant toutes les données de la page courante.
+Cela vous permet d'utiliser ces valeurs pour contrôler la manière dont votre composant est affiché.
+
+Dans l'exemple suivant, un composant de remplacement [`PageTitle`](/fr/reference/overrides/#pagetitle) affiche le titre de la page actuelle tel qu'il est défini dans le frontmatter du contenu :
+
+```astro {4} "{title}"
+---
+// src/components/Title.astro
+
+const { title } = Astro.locals.starlightRoute.entry.data;
+---
+
+<h1 id="_top">{title}</h1>
+
+<style>
+	h1 {
+		font-family: 'Comic Sans';
+	}
+</style>
+```
+
+Pour en savoir plus sur les propriétés disponibles, consultez la [référence des données de route](/fr/reference/route-data/).
+
+### Redéfinir uniquement sur des pages spécifiques
+
+Les redéfinitions de composants s'appliquent à toutes les pages. Cependant, vous pouvez les utiliser conditionnellement grâce aux valeurs de `starlightRoute` pour déterminer quand afficher votre interface utilisateur personnalisée, quand afficher l'interface utilisateur par défaut de Starlight, ou même quand afficher quelque chose de complètement différent.
+
+Dans l'exemple suivant, un composant redéfinissant le composant [`Footer`](/fr/reference/overrides/#footer) de Starlight affiche « Construit avec Starlight 🌟 » sur la page d'accueil uniquement, et affiche sinon le pied de page par défaut sur toutes les autres pages :
+
+```astro
+---
+// src/components/ConditionalFooter.astro
+import Default from '@astrojs/starlight/components/Footer.astro';
+
+const isHomepage = Astro.locals.starlightRoute.id === '';
+---
+
+{isHomepage ? (
+	<footer>Construit avec Starlight 🌟</footer>
+) : (
+	<Default><slot /></Default>
+)}
+```
+
+Pour en savoir plus sur le rendu conditionnel, consultez le [guide de syntaxe d'Astro](https://docs.astro.build/fr/basics/astro-syntax/#html-dynamique).

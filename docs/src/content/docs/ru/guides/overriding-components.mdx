@@ -1,0 +1,148 @@
+---
+title: Переопределение компонентов
+description: Узнайте, как переопределить встроенные компоненты Starlight, чтобы добавить пользовательские элементы в интерфейс вашего сайта документации.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+Пользовательский интерфейс и параметры конфигурации Starlight по умолчанию разработаны таким образом, чтобы быть гибкими и работать с разнообразным контентом. Большую часть внешнего вида Starlight по умолчанию можно настроить с помощью [CSS](/ru/guides/css-and-tailwind/) и [параметров конфигурации](/ru/guides/customization/).
+
+Если вам нужно больше, чем возможно из коробки, Starlight поддерживает создание собственных пользовательских компонентов для расширения или переопределения (полной замены) компонентов по умолчанию.
+
+## Когда переопределять
+
+Переопределение стандартных компонентов Starlight может быть полезно, когда:
+
+- Вы хотите изменить внешний вид интерфейса Starlight, если это невозможно сделать с использованием [пользовательских CSS](/ru/guides/css-and-tailwind/).
+- Вы хотите изменить поведение интерфейса Starlight.
+- Вы хотите добавить какой-то дополнительный интерфейс наряду с существующим интерфейсом Starlight.
+
+## Как выполнить переопределение
+
+<Steps>
+
+1. Выберите компонент Starlight, который вы хотите переопределить.
+   Вы можете найти полный список компонентов в [Справочнике по переопределениям](/ru/reference/overrides/).
+
+   :::tip
+   Не уверены, какой компонент нужно переопределить? Используйте [интерактивную карту переопределений Starlight](https://starlight-overrides-map.netlify.app/), чтобы узнать названия UI-компонентов Starlight.
+   :::
+
+   В этом примере будет переопределён компонент [`SocialIcons`](/ru/reference/overrides/#socialicons) в навигационной панели страницы.
+
+2. Создайте компонент Astro для замены компонента Starlight.
+   В этом примере отображается ссылка для связи.
+
+   ```astro
+   ---
+   // src/components/EmailLink.astro
+
+   const email = 'houston@example.com';
+   ---
+
+   <a href=`mailto:${email}`>Напишите мне</a>
+   ```
+
+3. Сообщите Starlight, что нужно использовать ваш компонент, указав его в параметре конфигурации [`components`](/ru/reference/configuration/#components) в `astro.config.mjs`:
+
+   ```js {9-12}
+   // astro.config.mjs
+   import { defineConfig } from 'astro/config';
+   import starlight from '@astrojs/starlight';
+
+   export default defineConfig({
+   	integrations: [
+   		starlight({
+   			title: 'Моя документация, с переопределением компонентов',
+   			components: {
+   				// Переопределение компонента `SocialIcons`.
+   				SocialIcons: './src/components/EmailLink.astro',
+   			},
+   		}),
+   	],
+   });
+   ```
+
+</Steps>
+
+## Переиспользование встроенного компонента
+
+Вы можете работать со стандартными UI-компонентами Starlight так же, как и со своими собственными: импортировать их и использовать в своих компонентах. Это позволяет вам сохранить весь интерфейс Starlight в рамках вашего дизайна, добавляя свой интерфейс рядом с ними.
+
+Пример ниже показывает компонент, который отображает ссылку на электронную почту наряду со стандартным компонентом `SocialIcons`:
+
+```astro {3,7}
+---
+// src/components/EmailLink.astro
+import Default from '@astrojs/starlight/components/SocialIcons.astro';
+---
+
+<a href="mailto:houston@example.com"> Связаться с нами по электронной почте </a>
+<Default><slot /></Default>
+```
+
+При рендеринге встроенного компонента внутри пользовательского компонента добавьте [`<slot />`](https://docs.astro.build/ru/basics/astro-components/#%D1%81%D0%BB%D0%BE%D1%82%D1%8B) внутрь компонента по умолчанию. Это гарантирует, что если компоненту переданы дочерние элементы, Astro будет знать, где их отобразить.
+
+Если вы повторно используете компоненты [`PageFrame`](/ru/reference/overrides/#pageframe) или [`TwoColumnContent`](/ru/reference/overrides/#twocolumncontent), содержащие [именованные слоты](https://docs.astro.build/ru/basics/astro-components/#именованые-слоты), вам также необходимо [перенести](https://docs.astro.build/ru/basics/astro-components/#перенос-слотов) эти слоты.
+
+Ниже показан пользовательский компонент, который повторно использует компонент `TwoColumnContent`, содержащий дополнительный именованный слот `right-sidebar`, нуждающийся в переносе:
+
+```astro {8}
+---
+// src/components/CustomContent.astro
+import Default from '@astrojs/starlight/components/TwoColumnContent.astro';
+---
+
+<Default>
+	<slot />
+	<slot name="right-sidebar" slot="right-sidebar" />
+</Default>
+```
+
+## Использование данных страницы
+
+При переопределении компонента Starlight вы можете получить доступ к глобальному объекту [`starlightRoute`](/ru/guides/route-data/), который содержит все данные для текущей страницы.
+Это позволяет вам использовать эти значения для управления тем, как ваш компонент будет отображаться.
+
+В следующем примере заменяющий компонент [`PageTitle`](/ru/reference/overrides/#pagetitle) отображает заголовок текущей страницы, установленный в метаданных контента:
+
+```astro {4} "{title}"
+---
+// src/components/Title.astro
+
+const { title } = Astro.locals.starlightRoute.entry.data;
+---
+
+<h1 id="_top">{title}</h1>
+
+<style>
+	h1 {
+		font-family: 'Comic Sans';
+	}
+</style>
+```
+
+Узнайте больше обо всех доступных свойствах в [Справочнике по данным маршрута](/ru/reference/route-data/).
+
+### Переопределение только на определённых страницах
+
+Переопределение компонентов применяется ко всем страницам. Тем не менее, вы можете осуществлять условную отрисовку, используя значения из `starlightRoute`, чтобы определить, когда показывать ваш интерфейс, когда показывать интерфейс Starlight, или даже когда показывать что-то совершенно другое.
+
+В следующем примере компонент, переопределяющий [`Footer`](/ru/reference/overrides/#footer) от Starlight, отображает надпись «Создано с помощью Starlight 🌟» только на главной странице, а на всех остальных страницах показывает футер по умолчанию:
+
+```astro
+---
+// src/components/ConditionalFooter.astro
+import Default from '@astrojs/starlight/components/Footer.astro';
+
+const isHomepage = Astro.locals.starlightRoute.id === '';
+---
+
+{isHomepage ? (
+	<footer>Создано с помощью Starlight 🌟</footer>
+) : (
+	<Default><slot /></Default>
+)}
+```
+
+Узнайте больше об отрисовке по условию в руководстве [Синтаксис Astro](https://docs.astro.build/ru/basics/astro-syntax/#динамический-html).

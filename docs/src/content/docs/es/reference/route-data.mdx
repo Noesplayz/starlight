@@ -1,0 +1,288 @@
+---
+title: Referencia de los Datos de Ruta
+description: La documentación de referencia completa para el objeto de datos de ruta de Starlight.
+---
+
+El objeto de datos de ruta de Starlight contiene información sobre la página actual.
+Aprende más sobre cómo funciona el modelo de datos de Starlight en la guía de [“Datos de Ruta”](/es/guides/route-data/).
+
+En los componentes de Astro, accede a los datos de ruta desde `Astro.locals.starlightRoute`:
+
+```astro {4}
+---
+// src/components/Custom.astro
+
+const { hasSidebar } = Astro.locals.starlightRoute;
+---
+```
+
+En el [middleware de ruta](/es/guides/route-data/#personalización-de-los-datos-de-ruta), accede a los datos de ruta desde el objeto de contexto pasado a tu función de middleware:
+
+```ts {5}
+// src/routeData.ts
+import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
+
+export const onRequest = defineRouteMiddleware((context) => {
+	const { hasSidebar } = context.locals.starlightRoute;
+});
+```
+
+## `starlightRoute`
+
+El objeto `starlightRoute` tiene las siguientes propiedades:
+
+### `dir`
+
+**Tipo:** `'ltr' | 'rtl'`
+
+Dirección de escritura de la página.
+
+### `lang`
+
+**Tipo:** `string`
+
+Etiqueta de idioma BCP-47 para la configuración regional de esta página, por ejemplo, `en`, `zh-CN` o `pt-BR`.
+
+### `locale`
+
+**Tipo:** `string | undefined`
+
+La ruta base en la que se sirve un idioma. `undefined` para los slugs de la configuración regional raíz.
+
+### `siteTitle`
+
+**Tipo:** `string`
+
+El título del sitio para la configuración regional de esta página.
+
+### `siteTitleHref`
+
+**Tipo:** `string`
+
+El valor para el atributo `href` del título del sitio, que enlaza de vuelta a la página de inicio, por ejemplo, `/`.
+Para sitios multilingües, esto incluirá la configuración regional actual, por ejemplo, `/en/` o `/zh-cn/`.
+
+### `id`
+
+**Tipo:** `string`
+
+El slug para esta página.
+
+### `isFallback`
+
+**Tipo:** `boolean | undefined`
+
+`true` si esta página no está traducida en el idioma actual y está utilizando contenido de respaldo de la configuración regional predeterminada.
+Solo se utiliza en sitios multilingües.
+
+### `entryMeta`
+
+**Tipo:** `{ dir: 'ltr' | 'rtl'; lang: string }`
+
+Metadatos de configuración regional para el contenido de la página. Puede ser diferente de los valores de configuración regional de nivel superior cuando una página está utilizando contenido de respaldo.
+
+### `entry`
+
+La entrada de la colección de contenido de Astro para la página actual.
+Incluye los valores del frontmatter para la página actual en `entry.data`.
+
+```ts
+entry: {
+	data: {
+		title: string;
+		description: string | undefined;
+		// etc.
+	}
+}
+```
+
+Aprende más sobre la forma de este objeto en la referencia del [Tipo de Entrada de Colección de Astro](https://docs.astro.build/en/reference/modules/astro-content/#collectionentry).
+
+### `sidebar`
+
+**Tipo:** `<code>Array&lt;<a href="#tipo-sidebarlink">SidebarLink</a> | <a href="#tipo-sidebargroup">SidebarGroup</a>&gt;</code>
+
+Entradas de la barra lateral de navegación del sitio para esta página.
+Cada entrada es un enlace de la barra lateral o un grupo de la barra lateral.
+
+#### Tipo `SidebarLink`
+
+Las entradas de enlaces de la barra lateral representan enlaces que se renderizan en la barra lateral y tienen las siguientes propiedades:
+
+##### `type`
+
+**Tipo:** `'link'`
+
+El tipo que identifica esta entrada como un enlace de la barra lateral.
+
+##### `label`
+
+**Tipo:** `string`
+
+El texto del enlace.
+
+##### `href`
+
+**Tipo:** `string`
+
+La URL a la que apunta el enlace.
+
+##### `isCurrent`
+
+**Tipo:** `boolean`
+
+`true` si el enlace apunta a la página actual.
+
+##### `attrs`
+
+**Tipo:** `Record<string, string | number | boolean | undefined>`
+
+Atributos HTML añadidos al elemento `<a>` renderizado.
+
+##### `badge`
+
+**Tipo:** `{ text: string; variant: 'note' | 'danger' | 'success' | 'caution' | 'tip' | 'default'; class?: string } | undefined`
+
+Configuración de la insignia que se renderiza junto a la etiqueta del enlace, si la hay.
+Consulta la [referencia de propiedades del componente `<Badge>`](/es/components/badges/#props-de-badge) para obtener más detalles.
+
+##### `autogenerate`
+
+**Tipo:** `{ directory: string } | undefined`
+
+Para los enlaces creados a partir de una [entrada de la barra lateral generada automáticamente](/es/guides/sidebar/#grupos-autogenerados), `directory` coincide con el valor configurado en [`autogenerate.directory`](/es/reference/configuration/#sidebar).
+
+Cuando la [`sidebar`](/es/reference/configuration/#sidebar) no está configurada, Starlight genera entradas para todas las páginas de documentación y usa una cadena de texto vacía (`''`) como valor de `directory`.
+
+#### Tipo `SidebarGroup`
+
+Las entradas de grupo de la barra lateral representan un conjunto de enlaces que se renderizan en la barra lateral y tienen las siguientes propiedades:
+
+##### `type`
+
+**Tipo:** `'group'`
+
+El tipo que identifica esta entrada como un grupo de barra lateral.
+
+##### `label`
+
+**Tipo:** `string`
+
+El texto del grupo.
+
+##### `entries`
+
+**Tipo:** <code>Array&lt;<a href="#tipo-sidebarlink">SidebarLink</a> | <a href="#tipo-sidebargroup">SidebarGroup</a>&gt;</code>
+
+Las entradas anidadas de la barra lateral de este grupo, que pueden ser enlaces o grupos.
+
+##### `collapsed`
+
+**Tipo:** `boolean`
+
+Si el grupo aparece oculto por defecto.
+
+##### `badge`
+
+**Tipo:** `{ text: string; variant: 'note' | 'danger' | 'success' | 'caution' | 'tip' | 'default'; class?: string } | undefined`
+
+Configuración de la insignia que se renderiza junto a la etiqueta del grupo, si la hay.
+Consulta la [referencia de propiedades del componente `<Badge>`](/es/components/badges/#props-de-badge) para obtener más detalles.
+
+##### `autogenerate`
+
+**Tipo:** `{ directory: string } | undefined`
+
+Para los grupos creados a partir de una [entrada de la barra lateral generada automáticamente](/es/guides/sidebar/#grupos-autogenerados), `directory` coincide con el valor configurado en [`autogenerate.directory`](/es/reference/configuration/#sidebar).
+
+Cuando la [`sidebar`](/es/reference/configuration/#sidebar) no está configurada, Starlight genera entradas para todas las páginas de documentación y usa una cadena de texto vacía (`''`) como valor de `directory`.
+
+### `hasSidebar`
+
+**Tipo:** `boolean`
+
+Indica si la barra lateral debe mostrarse o no en esta página.
+
+### `pagination`
+
+**Tipo:** `{ prev?: Link; next?: Link }`
+
+Enlaces a la página anterior y siguiente en la barra lateral si está habilitada.
+
+### `toc`
+
+**Tipo:** `{ minHeadingLevel: number; maxHeadingLevel: number; items: TocItem[] } | undefined`
+
+Tabla de contenido para esta página si está habilitada.
+
+### `headings`
+
+**Tipo:** `{ depth: number; slug: string; text: string }[]`
+
+Array de todos los encabezados de Markdown extraídos de la página actual.
+Utiliza [`toc`](#toc) en su lugar si deseas construir un componente de tabla de contenido que respete las opciones de configuración de Starlight.
+
+### `lastUpdated`
+
+**Tipo:** `Date | undefined`
+
+Objeto `Date` de JavaScript que representa cuándo se actualizó por última vez esta página si está habilitado.
+
+### `editUrl`
+
+**Tipo:** `URL | undefined`
+
+Objeto `URL` para la dirección donde se puede editar esta página si está habilitado.
+
+### `head`
+
+**tipo:** [`HeadConfig[]`](/es/reference/configuration/#headconfig)
+
+Array de todas las etiquetas para incluir en el `<head>` de la página actual.
+Incluye etiquetas importantes como `<title>` y `<meta charset="utf-8">`.
+
+## Utilidades
+
+### `defineRouteMiddleware()`
+
+Utiliza la utilidad `defineRouteMiddleware()` para ayudar a tipar tu módulo de middleware de ruta:
+
+```ts "defineRouteMiddleware"
+// src/routeData.ts
+import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
+
+export const onRequest = defineRouteMiddleware((context) => {
+	// ...
+});
+```
+
+### Tipo `StarlightRouteData`
+
+Si estás escribiendo código que necesita trabajar con los datos de ruta de Starlight, puedes importar el tipo `StarlightRouteData` para que coincida con la forma de `Astro.locals.starlightRoute`.
+
+En el siguiente ejemplo, una función `usePageTitleInTOC()` actualiza los datos de ruta para utilizar el título de la página actual como etiqueta para el primer elemento de la tabla de contenido, reemplazando la etiqueta predeterminada "Overview".
+El tipo `StarlightRouteData` te permite verificar si los cambios en los datos de ruta son válidos.
+
+```ts "StarlightRouteData"
+// src/route-utils.ts
+import type { StarlightRouteData } from '@astrojs/starlight/route-data';
+
+export function usePageTitleInTOC(starlightRoute: StarlightRouteData) {
+	const overviewLink = starlightRoute.toc?.items[0];
+	if (overviewLink) {
+		overviewLink.text = starlightRoute.entry.data.title;
+	}
+}
+```
+
+Esta función se puede llamar desde un middleware de ruta:
+
+```ts {3,6}
+// src/route-middleware.ts
+import { defineRouteMiddleware } from '@astrojs/starlight/route-data';
+import { usePageTitleInTOC } from './route-utils';
+
+export const onRequest = defineRouteMiddleware((context) => {
+	usePageTitleInTOC(context.locals.starlightRoute);
+});
+```
